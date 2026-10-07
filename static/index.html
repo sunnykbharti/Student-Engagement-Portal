@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Cell - Professor Classroom Analytics & Engagement Dashboard</title>
+    
+    <!-- Google Fonts & Lucide Icons & Chart.js -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-layout">
+        
+        <!-- SIDEBAR CONTROLS -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="brand">
+                    <div class="brand-icon"><i data-lucide="graduation-cap"></i></div>
+                    <div class="brand-text">
+                        <h2>AI Cell Core</h2>
+                        <span>Professor Analytics Suite</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-content">
+                <!-- Source Selector -->
+                <div class="control-group">
+                    <label class="group-label"><i data-lucide="video"></i> Video Input Source</label>
+                    <select id="sourceType" class="custom-select" onchange="handleSourceTypeChange()">
+                        <option value="sample">📁 Sample Video File</option>
+                        <option value="upload">📤 Upload MP4 Video</option>
+                        <option value="webcam">🎥 Live Webcam Stream</option>
+                    </select>
+
+                    <div id="samplePickerGroup" class="sub-group">
+                        <label>Select Sample File</label>
+                        <select id="sampleSelect" class="custom-select">
+                            <option value="classroom3.mp4">Classroom Sample 3 (Recommended)</option>
+                            <option value="classroom2.mp4">Classroom Sample 2</option>
+                            <option value="classroom_test.mp4">Classroom Short Test</option>
+                        </select>
+                    </div>
+
+                    <div id="uploadGroup" class="sub-group hidden">
+                        <label>Upload Video</label>
+                        <input type="file" id="videoFileInput" accept="video/mp4,video/mov,video/avi" onchange="uploadVideoFile()">
+                        <span id="uploadStatus" class="upload-hint">Select an MP4 file</span>
+                    </div>
+                </div>
+
+                <!-- Neural Engine Settings -->
+                <div class="control-group">
+                    <label class="group-label"><i data-lucide="cpu"></i> Neural Network Model</label>
+                    <select id="modelSelect" class="custom-select">
+                        <option value="yolov8n-pose.pt">yolov8n-pose (Fast / Light)</option>
+                        <option value="yolov8m-pose.pt">yolov8m-pose (High Precision)</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label class="group-label"><i data-lucide="sliders"></i> Hardware & Frame Sampling</label>
+                    
+                    <div class="slider-box">
+                        <div class="slider-header">
+                            <span>Sampling Rate (FPS)</span>
+                            <span id="fpsValue">1 FPS</span>
+                        </div>
+                        <input type="range" id="sampleFps" min="1" max="10" value="1" oninput="document.getElementById('fpsValue').innerText = this.value + ' FPS'">
+                    </div>
+
+                    <div class="slider-box">
+                        <div class="slider-header">
+                            <span>Max Window Duration</span>
+                            <span id="durationValue">60s</span>
+                        </div>
+                        <input type="range" id="maxSeconds" min="10" max="180" value="60" step="10" oninput="document.getElementById('durationValue').innerText = this.value + 's'">
+                    </div>
+
+                    <div class="slider-box">
+                        <div class="slider-header">
+                            <span>Detection Confidence</span>
+                            <span id="confValue">0.15</span>
+                        </div>
+                        <input type="range" id="confThresh" min="0.05" max="0.50" value="0.15" step="0.05" oninput="document.getElementById('confValue').innerText = this.value">
+                    </div>
+                </div>
+
+                <!-- Action Controls -->
+                <div class="action-box">
+                    <button id="startBtn" class="btn btn-primary btn-glow" onclick="startAnalysis()">
+                        <i data-lucide="play"></i> Start Analysis
+                    </button>
+                    <button id="stopBtn" class="btn btn-secondary" onclick="stopAnalysis()" disabled>
+                        <i data-lucide="square"></i> Stop
+                    </button>
+                    <button class="btn btn-ghost" onclick="resetSession()">
+                        <i data-lucide="rotate-ccw"></i> Reset Telemetry
+                    </button>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="hardware-pill">
+                    <i data-lucide="zap"></i> Engine Acceleration: <strong id="hardwareDevice">MPS</strong>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN DASHBOARD CONTENT AREA -->
+        <main class="main-content">
+            
+            <!-- HEADER BAR -->
+            <header class="top-header">
+                <div class="header-left">
+                    <h1>🎓 Classroom Behavioral Performance & Analytics</h1>
+                    <p>Computer Vision Neural Infrastructure • Real-time Student Engagement Auditing</p>
+                </div>
+                <div class="header-right">
+                    <div id="statusBadge" class="status-badge online">
+                        <span class="pulse-dot"></span> System Ready
+                    </div>
+                </div>
+            </header>
+
+            <!-- PROGRESS BAR CONTAINER -->
+            <div id="progressBox" class="progress-box hidden">
+                <div class="progress-info">
+                    <span id="progressText">Evaluating Video Frames...</span>
+                    <span id="progressPct">0%</span>
+                </div>
+                <div class="progress-track">
+                    <div id="progressBar" class="progress-fill" style="width: 0%;"></div>
+                </div>
+            </div>
+
+            <!-- KPI METRICS GRID -->
+            <section class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-icon icon-blue"><i data-lucide="users"></i></div>
+                    <div class="kpi-details">
+                        <span class="kpi-label">Active Headcount</span>
+                        <h2 id="kpiHeadcount">0 Students</h2>
+                    </div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-icon icon-green"><i data-lucide="activity"></i></div>
+                    <div class="kpi-details">
+                        <span class="kpi-label">Avg Focus Score</span>
+                        <h2 id="kpiFocus">0.0%</h2>
+                    </div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-icon icon-red"><i data-lucide="alert-triangle"></i></div>
+                    <div class="kpi-details">
+                        <span class="kpi-label">Distraction Events</span>
+                        <h2 id="kpiDistractions">0</h2>
+                    </div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-icon icon-amber"><i data-lucide="award"></i></div>
+                    <div class="kpi-details">
+                        <span class="kpi-label">Pedagogy Grade</span>
+                        <h2 id="kpiGrade">N/A</h2>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB SYSTEM -->
+            <div class="tabs-container">
+                <nav class="nav-tabs">
+                    <button class="tab-btn active" onclick="switchTab('tab-live', this)">
+                        <i data-lucide="video"></i> Live Stream & Trajectory
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('tab-analytics', this)">
+                        <i data-lucide="bar-chart-3"></i> Class Analytics & Trends
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('tab-roster', this)">
+                        <i data-lucide="user-check"></i> Student Profiles & Roster
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('tab-pedagogy', this)">
+                        <i data-lucide="brain"></i> AI Pedagogy Assistant
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('tab-exports', this)">
+                        <i data-lucide="file-text"></i> Reports & Downloads
+                    </button>
+                </nav>
+
+                <!-- TAB 1: LIVE FEED & TRAJECTORY -->
+                <div id="tab-live" class="tab-content active">
+                    <div class="split-view">
+                        <div class="card card-media">
+                            <div class="card-header">
+                                <h3><i data-lucide="film"></i> Input Media Preview</h3>
+                            </div>
+                            <div class="video-container">
+                                <video id="sampleVideoPlayer" controls autoplay muted loop class="video-player">
+                                    <source src="classroom3.mp4" type="video/mp4">
+                                    Your browser does not support HTML5 video.
+                                </video>
+                            </div>
+                        </div>
+
+                        <div class="card card-chart">
+                            <div class="card-header">
+                                <h3><i data-lucide="trending-up"></i> Real-Time Classroom Focus Curve (0 - 100%)</h3>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="timelineChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: ANALYTICS & TRENDS -->
+                <div id="tab-analytics" class="tab-content">
+                    <div class="split-view">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><i data-lucide="bar-chart"></i> Focused vs Interaction Duration (Seconds)</h3>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="barChartSummary"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><i data-lucide="pie-chart"></i> Class Behavioral Distribution</h3>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="donutBehaviorChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card full-width space-top">
+                        <div class="card-header">
+                            <h3><i data-lucide="list"></i> Second-by-Second Frame Telemetry Register</h3>
+                            <input type="text" id="tableFilter" class="input-search" placeholder="Search student or behavior..." onkeyup="filterTelemetryTable()">
+                        </div>
+                        <div class="table-scroll">
+                            <table class="data-table" id="rawTelemetryTable">
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp (s)</th>
+                                        <th>Tracked Student ID</th>
+                                        <th>Detected Behavior</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td colspan="3" class="text-center text-muted">No telemetry logged yet. Click 'Start Analysis' to process video.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: STUDENT ROSTER -->
+                <div id="tab-roster" class="tab-content">
+                    <div class="card full-width">
+                        <div class="card-header">
+                            <h3><i data-lucide="users"></i> Student Attention Audit Roster</h3>
+                        </div>
+                        <div class="table-scroll">
+                            <table class="data-table" id="rosterTable">
+                                <thead>
+                                    <tr>
+                                        <th>Student ID</th>
+                                        <th>Real Display Name</th>
+                                        <th>Focus Time</th>
+                                        <th>Interactions</th>
+                                        <th>Distractions</th>
+                                        <th>Focus Score</th>
+                                        <th>Attention Rating</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td colspan="8" class="text-center text-muted">Run analysis to populate student profiles.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 4: AI PEDAGOGY ASSISTANT -->
+                <div id="tab-pedagogy" class="tab-content">
+                    <div class="pedagogy-grid">
+                        <div class="grade-banner-card">
+                            <span>Class Performance Grade</span>
+                            <h1 id="pedagogyGradeDisplay">N/A</h1>
+                            <p>Average Classroom Engagement: <strong id="pedagogyScoreDisplay">0.0%</strong></p>
+                        </div>
+
+                        <div class="card flex-1">
+                            <div class="card-header">
+                                <h3><i data-lucide="search"></i> Automated Lecture Insights</h3>
+                            </div>
+                            <ul id="insightsList" class="pedagogy-list">
+                                <li>No telemetry data analyzed for recommendations.</li>
+                            </ul>
+                        </div>
+
+                        <div class="card flex-1">
+                            <div class="card-header">
+                                <h3><i data-lucide="lightbulb"></i> Recommended Instructional Actions</h3>
+                            </div>
+                            <ul id="recommendationsList" class="pedagogy-list highlight-list">
+                                <li>Run analysis from the control panel to generate pedagogical tips.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 5: REPORTS & EXPORTS -->
+                <div id="tab-exports" class="tab-content">
+                    <div class="export-cards-grid">
+                        <div class="export-card">
+                            <div class="export-icon"><i data-lucide="file-text"></i></div>
+                            <h3>Executive PDF Audit Report</h3>
+                            <p>Formal report containing session metadata, summary tables, and teaching feedback.</p>
+                            <button class="btn btn-primary" onclick="downloadPdfReport()">
+                                <i data-lucide="download"></i> Download PDF Report
+                            </button>
+                        </div>
+
+                        <div class="export-card">
+                            <div class="export-icon"><i data-lucide="table"></i></div>
+                            <h3>Summary Metrics CSV</h3>
+                            <p>Aggregated per-student engagement data, incident counts, and attention ratings.</p>
+                            <button class="btn btn-secondary" onclick="downloadCsv('summary')">
+                                <i data-lucide="download"></i> Export Summary CSV
+                            </button>
+                        </div>
+
+                        <div class="export-card">
+                            <div class="export-icon"><i data-lucide="database"></i></div>
+                            <h3>Raw Telemetry CSV</h3>
+                            <p>Frame-by-frame posture and identity tracking telemetry logs.</p>
+                            <button class="btn btn-secondary" onclick="downloadCsv('raw')">
+                                <i data-lucide="download"></i> Export Raw CSV
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- STUDENT NAME MAPPING MODAL -->
+    <div id="nameModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h3><i data-lucide="user-edit"></i> Edit Student Display Name</h3>
+            <p>Assign a real name or desk location to <strong id="modalStudentId">Student_1</strong></p>
+            <input type="text" id="modalNameInput" class="custom-input" placeholder="e.g. Alice Smith (Row 1)">
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="closeNameModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveStudentName()">Save Mapping</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN JAVASCRIPT -->
+    <script src="js/app.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
