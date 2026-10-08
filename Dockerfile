@@ -33,5 +33,6 @@ COPY . .
 # Expose Render standard port
 EXPOSE 8000
 
-# Default command: launch FastAPI web server binding to dynamic PORT
-CMD ["sh", "-c", "uvicorn server:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Default command: launch unified entrypoint main.py
+CMD ["python", "main.py"]
+

@@ -269,6 +269,13 @@ def reset_session():
         os.remove(state.summary_csv_path)
     return {"message": "Session reset successfully."}
 
+@app.get("/{video_name}.mp4")
+def get_video_file(video_name: str):
+    file_path = f"{video_name}.mp4"
+    if os.path.exists(file_path):
+        return FileResponse(file_path, media_type="video/mp4")
+    raise HTTPException(status_code=404, detail="Video file not found")
+
 # Mount static web assets
 if not os.path.exists("static"):
     os.makedirs("static")

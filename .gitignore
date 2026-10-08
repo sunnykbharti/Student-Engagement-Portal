@@ -14,12 +14,16 @@ __pycache__/
 *.pth
 *.onnx
 *.weights
+!yolov8n-pose.pt
 
 # Video & Raw Media Files
 *.mp4
 *.avi
 *.mov
 *.mkv
+!classroom3.mp4
+!classroom2.mp4
+!classroom_test.mp4
 
 # Generated Reports, Telemetry Data & Plots
 *.csv

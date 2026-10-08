@@ -31,16 +31,18 @@ def main():
         return
 
     # Default Mode: Launch FastAPI Server & Open Web App
-    host = "127.0.0.1"
-    port = 8000
-    url = f"http://{host}:{port}"
+    host = os.environ.get("HOST", "0.0.0.0" if os.environ.get("PORT") or os.environ.get("RENDER") else "127.0.0.1")
+    port = int(os.environ.get("PORT", 8000))
+    url = f"http://{'127.0.0.1' if host == '0.0.0.0' else host}:{port}"
 
-    print(f"\n🚀 Launching FastAPI Server on {url} ...")
-    print("🌐 Opening Web App in default browser...")
+    print(f"\n🚀 Launching FastAPI Server on {url} (binding {host}:{port}) ...")
+
+    # Open browser asynchronously only in local desktop mode
+    if not os.environ.get("PORT") and not os.environ.get("RENDER") and not os.environ.get("HEADLESS"):
+        print("🌐 Opening Web App in default browser...")
+        threading.Timer(1.5, lambda: webbrowser.open(url)).start()
+
     print("👉 Press Ctrl+C in this terminal window to stop the server.\n")
-
-    # Open browser asynchronously after 1.5s delay
-    threading.Timer(1.5, lambda: webbrowser.open(url)).start()
 
     try:
         import uvicorn

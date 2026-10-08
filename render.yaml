@@ -1,20 +1,13 @@
 services:
-  # Option A: FastAPI Web Application
+  # Primary Web Application: FastAPI + Modern Analytics Dashboard (main.py)
   - type: web
-    name: ai-classroom-analytics
+    name: student-engagement-portal
     env: docker
     dockerfilePath: Dockerfile
+    dockerCommand: python main.py
     plan: starter
     region: oregon
     envVars:
       - key: PORT
         value: 8000
 
-  # Option B: If deploying Streamlit instead, uncomment this service:
-  # - type: web
-  #   name: ai-classroom-streamlit
-  #   env: docker
-  #   dockerfilePath: Dockerfile
-  #   dockerCommand: streamlit run app.py --server.port $PORT --server.address 0.0.0.0
-  #   plan: starter
-  #   region: oregon
